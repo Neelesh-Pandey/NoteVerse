@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  name        String?
+  password    String?
+  imageUrl    String?
+  clerkUserId String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  comments  Comment[]
+  notes       Note[]
+  bookmarks     Bookmark[]
+}
+
+model Note {
+  id            String      @id @default(uuid())
+  title         String
+  description   String
+  imageUrl      String
+  pdfUrl        String
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category      String?     // To filter notes by subject/topic
+  visibility    Visibility  @default(PUBLIC) // PUBLIC or PRIVATE
+  price         Float?      // If you want to monetize PDFs
+  downloads     Int         @default(0) // Track number of downloads
+  comments      Comment[]
+  upvotes       Int         @default(0) 
+  upvotesBy     Upvote[] 
+  bookmarks     Bookmark[]
+  createdAt     DateTime    @default(now()) 
+  updatedAt     DateTime    @updatedAt  // ✅ Automatically updates on modification
+}
+
+model Upvote {
+  id        String   @id @default(uuid())
+  noteId    String
+  userId    String
+  createdAt DateTime @default(now())
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  @@unique([noteId, userId]) // Ensures one upvote per user per note
+}
+
+model Bookmark {
+  id        String   @id @default(uuid())
+  noteId    String
+  userId    String
+  createdAt DateTime @default(now())
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([noteId, userId]) // Ensures one bookmark per user per note
+}
+
+
+model Comment {
+  id            String      @id @default(uuid())
+  content    String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  note       Note      @relation(fields: [noteId], references: [id] , onDelete: Cascade)
+  noteId     String
+  parent     Comment?  @relation("CommentToComment", fields: [parentId], references: [id])
+  parentId   String?
+  children   Comment[] @relation("CommentToComment")
+  createdAt  DateTime  @default(now())
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+}
