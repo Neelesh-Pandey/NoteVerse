@@ -1,170 +1,3 @@
-// "use client";
-
-// import * as z from "zod";
-// import { zodResolver } from "@hookform/resolvers/zod";
-// import { useForm } from "react-hook-form";
-// import { Button } from "@/components/ui/button";
-// import { Input } from "@/components/ui/input";
-// import { Textarea } from "@/components/ui/textarea";
-// import {
-//   Form,
-//   FormControl,
-//   FormField,
-//   FormItem,
-//   FormLabel,
-//   FormMessage,
-// } from "@/components/ui/form";
-// import { UploadDropzone } from "@uploadthing/react";
-// import "@uploadthing/react/styles.css"; // Import UploadThing styles
-// import { useRouter } from "next/navigation";
-// import toast from "react-hot-toast";
-// import axios from "axios";
-// import { OurFileRouter } from "@/app/api/uploadthing/core";
-
-// // ✅ Define validation schema using Zod
-// const formSchema = z.object({
-//   title: z.string().min(1, { message: "Title is required" }),
-//   description: z
-//     .string()
-//     .min(10, { message: "Description must be at least 10 characters long" }),
-//   imageUrl: z.string().min(1, { message: "Image is required" }),
-//   pdfUrl: z.string().min(1, { message: "PDF is required" }),
-// });
-
-
-// const CreatePage = () => {
-//     const router = useRouter();
-//   const form = useForm<z.infer<typeof formSchema>>({
-//     resolver: zodResolver(formSchema),
-//     defaultValues: {
-//       title: "",
-//       description: "",
-//       imageUrl: "",
-//       pdfUrl: "",
-//     },
-//   });
-
-//   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-//     console.log("Submitting Data: ", values);
-
-//     try {
-//         await axios.post("/api/upload", values);
-//         router.push('/dashboard');
-//         toast.success("Course created");
-
-//     } catch {
-//         toast.error("Something went wrong");
-//     }
-//   };
-
-//   return (
-//     <div className="max-w-2xl mx-auto p-6">
-//       <h1 className="text-2xl font-semibold">Upload Note</h1>
-//       <p className="text-gray-500">
-//         Fill in the details and upload your files.
-//       </p>
-
-//       <Form {...form}>
-//         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-6">
-//           {/* Title Input */}
-//           <FormField
-//             control={form.control}
-//             name="title"
-//             render={({ field }) => (
-//               <FormItem>
-//                 <FormLabel>Title</FormLabel>
-//                 <FormControl>
-//                   <Input placeholder="Enter note title" {...field} />
-//                 </FormControl>
-//                 <FormMessage />
-//               </FormItem>
-//             )}
-//           />
-
-//           {/* Description Input */}
-//           <FormField
-//             control={form.control}
-//             name="description"
-//             render={({ field }) => (
-//               <FormItem>
-//                 <FormLabel>Description</FormLabel>
-//                 <FormControl>
-//                   <Textarea placeholder="Enter note description" {...field} />
-//                 </FormControl>
-//                 <FormMessage />
-//               </FormItem>
-//             )}
-//           />
-
-//           {/* Image Upload */}
-//           <FormField
-//             control={form.control}
-//             name="imageUrl"
-//             render={({  }) => (
-//               <FormItem>
-//                 <FormLabel>Image</FormLabel>
-//                 <FormControl>
-//                   <UploadDropzone< OurFileRouter, "imageUploader" >
-//                     endpoint="imageUploader"
-//                     onClientUploadComplete={(res) => {
-//                       if (res && res.length > 0) {
-//                         const uploadedImageUrl = res[0].url; // ✅ Correct URL
-//                         form.setValue("imageUrl", uploadedImageUrl, {
-//                           shouldValidate: true, // ✅ Validate after setting value
-//                         });
-//                         console.log("Image Uploaded: ", uploadedImageUrl);
-//                       }
-//                     }}
-//                     onUploadError={(error: Error) => {
-//                       alert(`ERROR! ${error.message}`);
-//                     }}
-//                   />
-//                 </FormControl>
-//                 <FormMessage />
-//               </FormItem>
-//             )}
-//           />
-
-//           {/* PDF Upload (Optional) */}
-//           <FormField
-//             control={form.control}
-//             name="pdfUrl"
-//             render={({  }) => (
-//               <FormItem>
-//                 <FormLabel>PDF File</FormLabel>
-//                 <FormControl>
-//                   <UploadDropzone< OurFileRouter, "pdfUploader" >
-//                     endpoint="pdfUploader"
-//                     onClientUploadComplete={(res) => {
-//                       if (res && res.length > 0) {
-//                         const uploadedPdfUrl = res[0].url;
-//                         form.setValue("pdfUrl", uploadedPdfUrl, {
-//                           shouldValidate: true,
-//                         });
-//                         console.log("PDF Uploaded: ", uploadedPdfUrl);
-//                       }
-//                     }}
-//                     onUploadError={(error: Error) => {
-//                       alert(`ERROR! ${error.message}`);
-//                     }}
-//                   />
-//                 </FormControl>
-//                 <FormMessage />
-//               </FormItem>
-//             )}
-//           />
-
-//           {/* Submit Button */}
-//           <Button type="submit" className="w-full">
-//             Submit
-//           </Button>
-//         </form>
-//       </Form>
-//     </div>
-//   );
-// };
-
-// export default CreatePage;
 "use client";
 
 import * as z from "zod";
@@ -184,11 +17,11 @@ import {
 import { UploadDropzone } from "@uploadthing/react";
 import "@uploadthing/react/styles.css";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import { toast } from "@/components/ui/use-toast";
 import axios, { AxiosError } from "axios";
 import { OurFileRouter } from "@/app/api/uploadthing/core";
 import { useState } from "react";
-import { Switch } from "@/components/ui/switch";
+// import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -205,10 +38,13 @@ import {
 import { HelpCircle, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { NavigationLink } from "@/components/navigation";
+import { ArrowLeft } from "lucide-react";
+
 
 // Define categories
 const categories = [
-  "Coading",
+  "Coding",
   "University",
   "Aptitude & Reasoning",
   "Web Development",
@@ -252,17 +88,45 @@ const CreatePage = () => {
     try {
       await axios.post("/api/upload", values);
       router.push("/dashboard");
-      toast.success("Note created successfully!");
+      toast({
+        title: "Note Created",
+        description: "Your note has been created successfully.",
+        variant: "default",
+      });
     } catch (error) {
       const axiosError = error as AxiosError<{ message: string }>;
-      toast.error(axiosError.response?.data?.message || "Something went wrong");
+      if (axiosError.response) {
+        toast({
+          title: "Error",
+          description: axiosError.response.data.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="p-6">
+      <div className="flex items-center gap-4 mb-8 ">
+        <NavigationLink
+          href="/"
+          variant="ghost"
+          size="sm"
+          className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Home
+        </NavigationLink>
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -413,9 +277,11 @@ const CreatePage = () => {
                             }
                           }}
                           onUploadError={(error: Error) => {
-                            toast.error(
-                              `Error uploading image: ${error.message}`
-                            );
+                            toast({
+                              title: "Error uploading image",
+                              description: error.message,
+                              variant: "destructive",
+                            });
                           }}
                         />
                         {imagePreview && (
@@ -467,9 +333,11 @@ const CreatePage = () => {
                             }
                           }}
                           onUploadError={(error: Error) => {
-                            toast.error(
-                              `Error uploading PDF: ${error.message}`
-                            );
+                            toast({
+                              title: "Error uploading PDF",
+                              description: error.message,
+                              variant: "destructive",
+                            });
                           }}
                         />
                         {pdfPreview && (
@@ -488,7 +356,7 @@ const CreatePage = () => {
               />
             </div>
 
-            {/* Visibility Toggle */}
+            {/* Visibility Toggle
             <FormField
               control={form.control}
               name="isPublic"
@@ -508,7 +376,7 @@ const CreatePage = () => {
                   </FormControl>
                 </FormItem>
               )}
-            />
+            /> */}
 
             {/* Submit Button */}
             <Button type="submit" className="w-full" disabled={isSubmitting}>

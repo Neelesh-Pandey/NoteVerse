@@ -2,7 +2,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { NoteCard } from "../_components/NoteCard";
+import { NoteCard } from "./NoteCard";
 
 interface Note {
   id: string;

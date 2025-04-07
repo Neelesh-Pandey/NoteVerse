@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import {
   FileText,
@@ -10,9 +9,8 @@ import {
   Users,
   BookOpen,
   ChevronRight,
-  Moon,
-  Sun,
 } from "lucide-react";
+import Link from "next/link";
 
 // Typewriter phrases
 const PHRASES = [
@@ -32,7 +30,6 @@ const MARQUEE_ITEMS = [
 ];
 
 export default function HeroSection() {
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   // Handle theme mounting
@@ -44,38 +41,20 @@ export default function HeroSection() {
   if (!mounted) return null;
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="relative w-full overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       {/* Animated background elements */}
       <BackgroundElements />
 
-      {/* Theme toggle */}
-      <div className="absolute right-4 top-4 z-50">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="rounded-full bg-white/10 backdrop-blur-sm dark:bg-slate-800/50"
-        >
-          {theme === "dark" ? (
-            <Sun className="h-5 w-5 text-yellow-400" />
-          ) : (
-            <Moon className="h-5 w-5 text-slate-700" />
-          )}
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </div>
-
       {/* Main content */}
-      <div className="container relative z-10 mx-auto flex min-h-screen flex-col items-center justify-center px-4 py-20 text-center">
+      <div className="container relative z-10 mx-auto flex  flex-col items-center justify-center px-4 py-20 text-center">
         {/* Main heading with animation */}
-        <motion.h1
-          className="mb-4 max-w-4xl bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl md:text-6xl lg:text-7xl dark:from-white dark:to-slate-300"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
         >
-          Empower Learning, One Note at a Time!
-        </motion.h1>
+          <TypewriterHeadline text="Collaborate, Learn, and Excel Together!" />
+        </motion.div>
 
         {/* Subheading */}
         <motion.p
@@ -99,25 +78,29 @@ export default function HeroSection() {
 
         {/* CTA buttons */}
         <motion.div
-          className="mb-16 flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0"
+          className="mb-16 flex flex-row space-x-4 space-y-0"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
         >
-          <Button
-            size="lg"
-            className="group bg-gradient-to-r from-blue-600 to-indigo-600 px-8 text-white transition-all hover:shadow-lg hover:shadow-blue-500/30 dark:from-blue-500 dark:to-indigo-500"
-          >
-            Get Started
-            <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="border-slate-300 px-8 text-slate-800 transition-all hover:bg-slate-100 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800"
-          >
-            Explore Notes
-          </Button>
+          <Link href="/create">
+            <Button
+              size="lg"
+              className="group bg-gradient-to-r from-blue-600 to-indigo-600 px-8 text-white transition-all hover:shadow-lg hover:shadow-blue-500/30 dark:from-blue-500 dark:to-indigo-500"
+            >
+              Upload Notes
+              <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Button>
+          </Link>
+          <Link href="/browse">
+            <Button
+              variant="outline"
+              size="lg"
+              className="border-slate-300 px-8 text-slate-800 transition-all hover:bg-slate-100 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800"
+            >
+              Explore Notes
+            </Button>
+          </Link>
         </motion.div>
 
         {/* Marquee effect */}
@@ -268,7 +251,30 @@ function BackgroundElements() {
       })}
 
       {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80 dark:to-slate-900/80" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80 dark:to-black" />
     </div>
+  );
+}
+
+function TypewriterHeadline({ text }: { text: string }) {
+  return (
+    <h1 className="mb-4 max-w-4xl text-4xl font-extrabold leading-none tracking-tight sm:text-5xl md:text-6xl lg:text-7xl text-balance text-slate-900 dark:text-white">
+      {text.split("").map((char, index) => (
+        <motion.span
+          key={index}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.3,
+            delay: index * 0.03,
+            type: "spring",
+            stiffness: 200,
+          }}
+          className="inline-block"
+        >
+          {char === " " ? "\u00A0" : char}
+        </motion.span>
+      ))}
+    </h1>
   );
 }

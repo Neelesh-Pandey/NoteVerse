@@ -32,7 +32,7 @@ interface Note {
   createdAt: string;
 }
 
-export default function BrowsePage() {
+export default  function BrowsePage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,13 +105,14 @@ export default function BrowsePage() {
       <div className="max-w-6xl mx-auto p-6">
         {loading ? (
           // Skeleton Loading Effect
-          
-          Array.from({ length: 1 }).map((_, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="animate-pulse bg-gray-200 rounded-lg aspect-[4/3]"
+              className="animate-pulse rounded-xl bg-gray-200 dark:bg-gray-800 aspect-[4/3] shadow-md"
             />
-          ))
+          ))}
+        </div>
         ) : notes.length > 0 ? (
           <NoteList notes={notes} />
         ) : (

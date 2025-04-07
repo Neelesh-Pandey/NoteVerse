@@ -2,23 +2,12 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import * as z from "zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { PlusCircle } from "lucide-react";
+import { ArrowLeft, PlusCircle } from "lucide-react";
 import DataTable, { Note } from "@/components/DataTable";
-
-// ✅ Define API response schema
-const noteSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string(),
-  pdfUrl: z.string().url(),
-  createdAt: z.string(),
-});
-
-const notesSchema = z.array(noteSchema);
+import { NavigationLink } from "@/components/navigation";
 
 export default function Dashboard() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -26,17 +15,19 @@ export default function Dashboard() {
 
   // ✅ Fetch Notes
   useEffect(() => {
+    
     async function fetchNotes() {
       try {
+        // Get notes
         const res = await axios.get("/api/upload/me");
-        const validatedData = notesSchema.safeParse(res.data);
-
-        if (!validatedData.success) {
-          console.error("Invalid API response", validatedData.error);
-          return;
-        }
-
-        setNotes(validatedData.data);
+        
+        // Ensure upvotes field exists (for backward compatibility)
+        const notesWithUpvotes = res.data.map((note: Note) => ({
+          ...note,
+          upvotes: note.upvotes || 0
+        }));
+        
+        setNotes(notesWithUpvotes);
       } catch (error) {
         console.error("Error fetching notes", error);
       }
@@ -55,8 +46,58 @@ export default function Dashboard() {
     }
   }
 
+  // ✅ Handle Upvote
+  async function handleUpvote(id: string) {
+    try {
+      // Optimistically update UI
+      setNotes(prevNotes => 
+        prevNotes.map(note => {
+          if (note.id === id) {
+            return {
+              ...note,
+              upvotes: (note.upvotes || 0) + 1,
+              upvotedByUser: true
+            };
+          }
+          return note;
+        })
+      );
+      
+      // Send API request
+      await axios.post(`/api/upvote`, { noteId: id });
+      
+    } catch (error) {
+      console.error("Error upvoting note", error);
+      // Revert the optimistic update on error
+      fetchNotes();
+    }
+  }
+
+  // Helper function to refetch notes
+  async function fetchNotes() {
+    try {
+      const res = await axios.get("/api/upload/me");
+      setNotes(res.data);
+    } catch (error) {
+      console.error("Error refetching notes", error);
+    }
+  }
+
   return (
+    
+    
     <div className="max-w-4xl mx-auto p-6">
+        <div className="flex items-center gap-4 mb-8 ">
+              <NavigationLink
+                href="/"
+                variant="ghost"
+                size="sm"
+                className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </NavigationLink>
+            </div>
       <h1 className="text-2xl font-bold mb-4">My Uploaded Notes</h1>
 
       {/* 🔍 Search Input */}
@@ -77,8 +118,11 @@ export default function Dashboard() {
 
       {/* 📋 Data Table */}
       <DataTable
-        data={notes.filter((note) => note.title.toLowerCase().includes(filter.toLowerCase()))}
+        data={notes
+          .filter((note) => note.title.toLowerCase().includes(filter.toLowerCase()))
+          .sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0))} // Sort by upvotes
         onDelete={handleDelete}
+        onUpvote={handleUpvote}
       />
     </div>
   );

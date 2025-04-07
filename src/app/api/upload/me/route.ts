@@ -8,18 +8,20 @@ export async function GET() {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
+    
     const user = await db.user.findUnique({ where: { clerkUserId: userId } });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-
-    // Fetch only the user's notes
+    
+    // Fetch the user's notes including upvotes
     const notes = await db.note.findMany({
       where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
+      orderBy: { 
+        upvotes: "desc" // Sort by upvotes descending
+      },
     });
-
+    
     return NextResponse.json(notes, { status: 200 });
   } catch (error) {
     console.error("Error fetching user notes:", error);

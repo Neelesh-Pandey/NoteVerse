@@ -17,7 +17,9 @@ interface LeaderboardUser {
 }
 
 // ✅ Fetch data dynamically from API
-const fetchLeaderboardData = async (type: string): Promise<LeaderboardUser[]> => {
+const fetchLeaderboardData = async (
+  type: string
+): Promise<LeaderboardUser[]> => {
   try {
     const response = await fetch(`/api/leaderboard?type=${type}`);
     if (!response.ok) {
@@ -242,15 +244,16 @@ const LeaderboardPage = () => {
                   <TabsContent value={activeTab} className="mt-0 space-y-4">
                     {(activeTab === "contributors" ? contributors : upvoted)
                       .length > 0 ? (
-                      (activeTab === "contributors" ? contributors : upvoted).map(
-                        (user) => (
-                          <LeaderboardItem
-                            key={user.id}
-                            user={user}
-                            activeTab={activeTab}
-                          />
-                        )
-                      )
+                      (activeTab === "contributors"
+                        ? contributors
+                        : upvoted
+                      ).map((user) => (
+                        <LeaderboardItem
+                          key={user.id}
+                          user={user}
+                          activeTab={activeTab}
+                        />
+                      ))
                     ) : (
                       <div className="text-center py-16">
                         <p className="text-slate-500 dark:text-slate-400">

@@ -1,148 +1,431 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import axios from "axios";
-import { useRouter, useParams } from "next/navigation";
-import toast from "react-hot-toast";
-import Image from "next/image";
+import * as z from "zod";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { UploadButton } from "@/utils/uploadthing";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { UploadDropzone } from "@uploadthing/react";
+import "@uploadthing/react/styles.css";
+import { useRouter, useParams } from "next/navigation";
+import { toast } from "@/components/ui/use-toast";
+import axios from "axios";
+import { OurFileRouter } from "@/app/api/uploadthing/core";
+// import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { HelpCircle, FileText, ArrowLeft } from "lucide-react";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import { NavigationLink } from "@/components/navigation";
 
+// Define categories
+const categories = [
+  "Coading",
+  "University",
+  "Aptitude & Reasoning",
+  "Web Development",
+  "Computer Science",
+  "Engineering",
+  "Other",
+];
+
+// Define validation schema using Zod
 const formSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().min(1, "Description is required"),
-  imageUrl: z.string().url("Invalid image URL"),
-  pdfUrl: z.string().url("Invalid PDF URL"),
+  title: z.string().min(1, { message: "Title is required" }),
+  description: z
+    .string()
+    .min(10, { message: "Description must be at least 10 characters long" }),
+  imageUrl: z.string().min(1, { message: "Image is required" }),
+  pdfUrl: z.string().min(1, { message: "PDF is required" }),
+  category: z.string().min(1, { message: "Category is required" }),
+  isPublic: z.boolean().default(true),
 });
 
-type FormData = z.infer<typeof formSchema>;
-
-export default function UpdateNote() {
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-  });
-
+const UpdateNotePage = () => {
   const router = useRouter();
   const { id } = useParams();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [pdfPreview, setPdfPreview] = useState<string | null>(null);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      imageUrl: "",
+      pdfUrl: "",
+      category: "",
+      isPublic: true,
+    },
+  });
 
   useEffect(() => {
     const fetchNote = async () => {
       try {
         const { data } = await axios.get(`/api/upload/${id}`);
-        setValue("title", data.title);
-        setValue("description", data.description);
-        setValue("imageUrl", data.imageUrl);
-        setValue("pdfUrl", data.pdfUrl);
+        form.setValue("title", data.title);
+        form.setValue("description", data.description);
+        form.setValue("imageUrl", data.imageUrl);
+        form.setValue("pdfUrl", data.pdfUrl);
+        form.setValue("category", data.category);
+        form.setValue("isPublic", data.isPublic);
         setImagePreview(data.imageUrl);
         setPdfPreview(data.pdfUrl);
         setLoading(false);
       } catch (error) {
         console.error("Failed to load note", error);
-        toast.error("Failed to load note");
+        toast({
+          title: "Failed to load note",
+          description: "Please try again later.",
+          variant: "destructive",
+        });
         setLoading(false);
       }
     };
     fetchNote();
-  }, [id, setValue]);
+  }, [id, form]);
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
     try {
-      await axios.put(`/api/upload/${id}`, {
-        title: data.title,
-        description: data.description,
-        imageUrl: data.imageUrl || "", // Ensure it's a string
-        pdfUrl: data.pdfUrl || "",
-      });
-
-      toast.success("Note updated successfully");
+      await axios.put(`/api/upload/${id}`, values);
       router.push("/dashboard");
+      toast({
+        title: "Note updated successfully",
+        description: "Your note has been updated.",
+        variant: "default",
+      });
     } catch (error) {
-      console.error("Update failed:", error);
-      toast.error("Failed to update note");
+      console.error("Failed to update note", error);
+      toast({
+        title: "Failed to update note",
+        description: "Please try again later.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-2xl h-screen mx-auto p-6  rounded-lg">
-      <h1 className="text-2xl font-semibold mb-4 text-center">
-        Update the Note Data
-      </h1>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Label>Title</Label>
-        <Input {...register("title")} placeholder="Enter title" />
-        {errors.title && (
-          <p className="text-red-500 text-sm">{errors.title.message}</p>
-        )}
+    <div className="p-6">
+      <div className="flex items-center gap-4 mb-8">
+        <NavigationLink
+          href="/dashboard"
+          variant="ghost"
+          size="sm"
+          className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </NavigationLink>
+      </div>
 
-        <Label>Description</Label>
-        <Textarea
-          {...register("description")}
-          placeholder="Enter description"
-        />
-        {errors.description && (
-          <p className="text-red-500 text-sm">{errors.description.message}</p>
-        )}
-
-        <Label>Image Preview</Label>
-        <div className="flex items-center justify-center border border-black">
-          {imagePreview && (
-            <Image
-              src={imagePreview}
-              alt="Preview"
-              width={200}
-              height={200}
-              className="border rounded"
-            />
-          )}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-4xl mx-auto"
+      >
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2">Update Note</h1>
+          <p className="text-muted-foreground">
+            Edit your note details and content
+          </p>
         </div>
-        <UploadButton
-          endpoint="imageUploader"
-          onClientUploadComplete={(res) => {
-            const url = res[0].url;
-            setValue("imageUrl", url);
-            setImagePreview(url);
-          }}
-          onUploadError={(error: Error) => {
-            console.error("Image upload failed", error);
-            toast.error("Image upload failed");
-          }}
-        />
 
-        <Label>PDF Preview</Label>
-        {pdfPreview && (
-          <iframe src={pdfPreview} className="w-full h-40 border rounded" />
-        )}
-        <UploadButton
-          endpoint="pdfUploader"
-          onClientUploadComplete={(res) => {
-            const url = res[0].url;
-            setValue("pdfUrl", url);
-            setPdfPreview(url);
-          }}
-          onUploadError={(error: Error) => {
-            console.error("PDF upload failed", error);
-            toast.error("PDF upload failed");
-          }}
-        />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Title Input */}
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      Title
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              Enter a clear and descriptive title for your note
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter note title" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Updating..." : "Apply Changes"}
-        </Button>
-      </form>
+              {/* Category Selection */}
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      Category
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Select the subject category for your note</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Description Input */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    Description
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Provide a detailed description of your note</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Enter note description"
+                      className="min-h-[200px] resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Image Upload */}
+              <FormField
+                control={form.control}
+                name="imageUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      Cover Image
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Upload a cover image for your note</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </FormLabel>
+                    <FormControl>
+                      <div className="space-y-4">
+                        <UploadDropzone<OurFileRouter, "imageUploader">
+                          endpoint="imageUploader"
+                          onClientUploadComplete={(res) => {
+                            if (res && res.length > 0) {
+                              const uploadedImageUrl = res[0].url;
+                              field.onChange(uploadedImageUrl);
+                              setImagePreview(uploadedImageUrl);
+                            }
+                          }}
+                          onUploadError={(error: Error) => {
+                            toast({
+                              title: `Error uploading image: ${error.message}`,
+                              description: "Please try again.",
+                              variant: "destructive",
+                            })
+                          }}
+                        />
+                        {imagePreview && (
+                          <div className="relative aspect-video rounded-lg overflow-hidden border">
+                            <Image
+                              src={imagePreview}
+                              alt="Preview"
+                              className="object-cover w-full h-full"
+                              width={400}
+                              height={200}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* PDF Upload */}
+              <FormField
+                control={form.control}
+                name="pdfUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      PDF File
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Upload your note in PDF format</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </FormLabel>
+                    <FormControl>
+                      <div className="space-y-4">
+                        <UploadDropzone<OurFileRouter, "pdfUploader">
+                          endpoint="pdfUploader"
+                          onClientUploadComplete={(res) => {
+                            if (res && res.length > 0) {
+                              const uploadedPdfUrl = res[0].url;
+                              field.onChange(uploadedPdfUrl);
+                              setPdfPreview(uploadedPdfUrl);
+                            }
+                          }}
+                          onUploadError={(error: Error) => {
+                            toast({
+                              title: `Error uploading PDF: ${error.message}`,
+                              description: "Please try again.",
+                              variant: "destructive",
+                            })
+                          }}
+                        />
+                        {pdfPreview && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 p-4 rounded-lg border bg-muted">
+                              <FileText className="h-8 w-8 text-primary" />
+                              <span className="text-sm">
+                                PDF uploaded successfully
+                              </span>
+                            </div>
+                            <iframe 
+                              src={pdfPreview} 
+                              className="w-full h-40 rounded-lg border"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Visibility Toggle
+            <FormField
+              control={form.control}
+              name="isPublic"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Visibility</FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Make your note {field.value ? "public" : "private"}
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            /> */}
+
+            {/* Submit Button */}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  Updating...
+                </div>
+              ) : (
+                "Update Note"
+              )}
+            </Button>
+          </form>
+        </Form>
+      </motion.div>
     </div>
   );
-}
+};
+
+export default UpdateNotePage;

@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import {  useParams } from "next/navigation";
 import axios from "axios";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Comment from "@/components/Comment";
 import { useAuth } from "@clerk/nextjs";
+import { CustomCursor } from "@/components/ui/custom-cursor";
 import { Button } from "@/components/ui/button";
+import { ExternalLink, Bookmark, BookmarkCheck } from "lucide-react";
+import { motion } from "framer-motion";
+import { UpvoteButton } from "@/components/ui/upvote-button";
+import { toast } from "@/components/ui/use-toast";
+
 
 // Comment Type
 export interface CommentType {
@@ -51,8 +57,7 @@ export default function NotePage() {
   const [newComment, setNewComment] = useState<string>("");
   const { userId: clerkUserId } = useAuth();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isUpvoted, setIsUpvoted] = useState<boolean>(false);
-  const [upvoteCount, setUpvoteCount] = useState<number>(0);
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   // Fetch data
   useEffect(() => {
@@ -74,9 +79,14 @@ export default function NotePage() {
             `/api/user-by-clerk/${clerkUserId}`
           );
           if (user) setCurrentUser(user);
+          if(!user) {
+            toast({
+              title: "Error",
+              description: "User not found.",
+              variant: "destructive",
+            });
+          }
         }
-        setIsUpvoted(noteData.isUpvoted);
-        setUpvoteCount(noteData.upvotes);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -86,27 +96,6 @@ export default function NotePage() {
     fetchData();
   }, [id, clerkUserId]);
 
-  //upvote functction
-  async function handleUpvote() {
-    try {
-      const res = await axios.post("/api/upvote", {
-        noteId: note?.id,
-      });
-
-      if (res.status === 200) {
-        // ✅ Refetch updated note after upvote/unvote
-        const { data: updatedNote } = await axios.get(
-          `/api/upload/${note?.id}`
-        );
-
-        // ✅ Set up-to-date values
-        setIsUpvoted(updatedNote.isUpvoted);
-        setUpvoteCount(updatedNote.upvotes);
-      }
-    } catch (error) {
-      console.error("Error toggling upvote:", error);
-    }
-  }
   // Handle New Comment
   async function handleCommentSubmit() {
     if (!newComment.trim() || !currentUser) return;
@@ -192,110 +181,245 @@ export default function NotePage() {
     }
   }
 
-  if (loading) return <p>Loading note...</p>;
-  if (!note) return <p>Note not found</p>;
+  // Handle Upvote
+  const handleUpvote = async () => {
+    if (!currentUser) {
+      toast({
+        title: "Please sign in",
+        description: "You need to be signed in to upvote notes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await axios.post(`/api/upvote`, {
+        noteId: note?.id,
+      }
+      );
+      setNote((prev) =>
+        prev
+          ? {
+              ...prev,
+              isUpvoted: !prev.isUpvoted,
+              upvotes: prev.isUpvoted
+                ? (prev.upvotes || 0) - 1
+                : (prev.upvotes || 0) + 1,
+            }
+          : null
+      );
+    } catch (error) {
+      console.error("Error upvoting:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upvote. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle Bookmark
+  const handleBookmark = async () => {
+    if (!currentUser) {
+      toast({
+        title: "Please sign in",
+        description: "You need to be signed in to bookmark notes.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try{
+      if(isBookmarked) {
+        await axios.delete(`/api/bookmark`, {
+          data: {
+            noteId: note?.id,
+          },
+
+      });
+        setIsBookmarked(false);
+      }
+      else {
+        await axios.post(`/api/bookmark`, {
+          noteId: note?.id,
+        });
+        setIsBookmarked(true);
+      }
+
+      toast({
+        description: isBookmarked
+          ? "Note removed from bookmarks"
+          : "Note added to bookmarks",
+      });
+    } catch (error) {
+      console.error("Error bookmarking:", error);
+      toast({
+        title: "Error",
+        description: "Failed to bookmark. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Check if note is bookmarked on load
+  useEffect(() => {
+    if (currentUser && note) {
+      axios
+        .get(`/api/bookmark`, {
+          params: {
+            noteId: note.id,
+          },
+        })
+        .then((response) => setIsBookmarked(response.data.isBookmarked))
+        .catch((error) =>
+          console.error("Error checking bookmark status:", error)
+        );
+    }
+  }, [currentUser, note]);
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-zinc-900 dark:border-zinc-100"></div>
+      </div>
+    );
+
+  if (!note)
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-xl text-zinc-600 dark:text-zinc-400">
+          Note not found
+        </p>
+      </div>
+    );
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      {/* User Info */}
-      <div className="flex items-center gap-3 mb-4">
-        <Avatar className="w-10 h-10 rounded-full overflow-hidden border border-gray-300 dark:border-gray-700">
-          {note.user.imageUrl ? (
-            <AvatarImage
-              src={note.user.imageUrl}
-              alt="User Avatar"
-              className="object-cover w-full h-full"
+    <>
+     
+      <CustomCursor />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-4xl mx-auto p-6 space-y-8"
+      >
+        {/* Header Section */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Avatar className="w-12 h-12 rounded-full overflow-hidden border-2 border-zinc-200 dark:border-zinc-800">
+              {note.user.imageUrl ? (
+                <AvatarImage
+                  src={note.user.imageUrl}
+                  alt="User Avatar"
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100">
+                  {(note.user.name?.[0] || "U").toUpperCase()}
+                </AvatarFallback>
+              )}
+            </Avatar>
+            <div>
+              <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">
+                {note.user.name || "Unknown User"}
+              </h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                {new Date().toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <UpvoteButton
+              isUpvoted={note.isUpvoted || false}
+              upvoteCount={note.upvotes || 0}
+              onUpvote={handleUpvote}
             />
-          ) : (
-            <AvatarFallback>
-              {(note.user.name?.[0] || "U").toUpperCase()}
-            </AvatarFallback>
-          )}
-        </Avatar>
-        <div>
-          <p className="font-semibold">{note.user.name || "Unknown User"}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBookmark}
+              className="gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
+              {isBookmarked ? (
+                <BookmarkCheck className="w-4 h-4" />
+              ) : (
+                <Bookmark className="w-4 h-4" />
+              )}
+              {isBookmarked ? "Bookmarked" : "Bookmark"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(note.pdfUrl, "_blank")}
+              className="gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
+              <ExternalLink className="w-4 h-4" />
+              View Full
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Note Details */}
-      <h1 className="text-2xl font-bold">{note.title}</h1>
-      <p className="text-gray-600 dark:text-gray-300">{note.description}</p>
+        {/* Note Content */}
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
+            {note.title}
+          </h1>
+          <p className="text-lg text-zinc-600 dark:text-zinc-400">
+            {note.description}
+          </p>
+        </div>
 
-      {/* PDF Preview */}
-      <div className="mt-4">
-        <iframe src={note.pdfUrl} className="w-full h-96 border rounded-md" />
-      </div>
-
-      {/* Full Screen Button */}
-      <div className="mt-4">
-        <a
-          href={note.pdfUrl}
-          target="_blank"
-          className="bg-blue-500 text-white px-4 py-2 rounded-md"
-        >
-          View Full Screen
-        </a>
-      </div>
-
-      {/* Upvote Button */}
-      <div className="mt-4 flex items-center gap-2">
-        <Button
-          onClick={handleUpvote}
-          className={`px-4 py-2 rounded-md ${
-            isUpvoted
-              ? "bg-red-500 hover:bg-red-700"
-              : "bg-blue-500 hover:bg-blue-700"
-          } text-white`}
-        >
-          {isUpvoted ? "👎 Unvote" : "👍 Upvote"} {upvoteCount}{" "}
-          {/* ✅ Correct variable */}
-        </Button>
-      </div>
-      {/* bookmark section */}
-
-      {/* Comment Section */}
-      <div className="mt-8 mb-8">
-        <h2 className="text-xl font-bold mb-4">Comments</h2>
-
-        {/* Add a new comment */}
-        <div className="mb-4">
-          <textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            className="w-full p-2 border rounded-md"
-            placeholder="Add a comment..."
+        {/* PDF Preview */}
+        <div className="rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-lg">
+          <iframe
+            src={note.pdfUrl}
+            className="w-full h-[600px] bg-white dark:bg-zinc-900"
           />
-          <button
-            onClick={handleCommentSubmit}
-            className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md"
-            disabled={!currentUser}
-          >
-            Add Comment
-          </button>
-          {!currentUser && (
-            <p className="text-red-500 mt-2">
-              Please log in to leave a comment
-            </p>
-          )}
         </div>
 
-        {/* Render comments */}
-        <div className="space-y-4">
-          {comments.length > 0 ? (
-            comments.map((comment) => (
-              <Comment
-                key={comment.id}
-                comment={comment}
-                onReply={handleReply}
-              />
-            ))
-          ) : (
-            <p className="text-gray-500">
-              No comments yet. Be the first to comment!
-            </p>
-          )}
+        {/* Comments Section */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+            Comments
+          </h2>
+
+          {/* New Comment Form */}
+          <div className="space-y-4">
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              className="w-full p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 focus:border-transparent"
+              placeholder="Add a comment..."
+              rows={3}
+            />
+            <div className="flex items-center justify-between">
+              <Button
+                onClick={handleCommentSubmit}
+                disabled={!currentUser}
+                className="bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
+              >
+                {currentUser ? "Post Comment" : "Sign in to Comment"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Comments List */}
+          <div className="space-y-6">
+            {comments.length > 0 ? (
+              comments.map((comment) => (
+                <Comment
+                  key={comment.id}
+                  comment={comment}
+                  onReply={handleReply}
+                />
+              ))
+            ) : (
+              <p className="text-zinc-500 dark:text-zinc-400 text-center py-8">
+                No comments yet. Be the first to comment!
+              </p>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </>
   );
 }

@@ -1,15 +1,17 @@
-// /src/app/api/user-by-clerk/[clerkUserId]/route.ts
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
 export async function GET(
   req: Request,
-  context: { params: { clerkUserId: string } }
+  { params }: { params: Promise<{ clerkUserId: string }> }
 ) {
-  const { clerkUserId } = context.params          
+  const { clerkUserId } = await params;
 
   if (!clerkUserId) {
-    return NextResponse.json({ error: "clerkUserId is required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "clerkUserId is required" },
+      { status: 400 }
+    );
   }
 
   try {
@@ -24,6 +26,9 @@ export async function GET(
     return NextResponse.json(user);
   } catch (error) {
     console.error("Error fetching user:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

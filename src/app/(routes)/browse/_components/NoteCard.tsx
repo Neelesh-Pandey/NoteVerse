@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
+import axios from "axios";
+import { UpvoteButton } from "@/components/ui/upvote-button";
 
 interface Note {
   id: string;
@@ -13,6 +16,8 @@ interface Note {
     email: string;
     imageUrl: string | null;
   };
+  upvotes?: number;
+  isUpvoted?: boolean;
 }
 
 interface NoteCardProps {
@@ -21,13 +26,37 @@ interface NoteCardProps {
 }
 
 export const NoteCard = ({ note, onClick }: NoteCardProps) => {
+  const [isUpvoted, setIsUpvoted] = useState<boolean>(note.isUpvoted || false);
+  const [upvoteCount, setUpvoteCount] = useState<number>(note.upvotes || 0);
+
+  // Handle upvote logic
+  const handleUpvote = async () => {
+    try {
+      const res = await axios.post("/api/upvote", {
+        noteId: note.id,
+      });
+
+      if (res.status === 200) {
+        // Refetch updated note after upvote/unvote
+        const { data: updatedNote } = await axios.get(`/api/upload/${note.id}`);
+
+        // Set up-to-date values
+        setIsUpvoted(updatedNote.isUpvoted);
+        setUpvoteCount(updatedNote.upvotes);
+      }
+    } catch (error) {
+      console.error("Error toggling upvote:", error);
+    }
+  };
+
   return (
     <div
-      onClick={onClick}
-      className="  cursor-pointer border p-4 rounded-lg shadow-md hover:shadow-xl transition-all duration-200
-      bg-white dark:bg-black w-full max-w-sm  flex flex-col justify-between"
+
+      className=" border p-4 rounded-lg shadow-md hover:shadow-xl transition-all duration-200
+      bg-white dark:bg-black w-full max-w-sm flex flex-col justify-between"
     >
       {/* User Info */}
+      <div className="flex justify-between">
       <div className="flex items-center gap-3">
         {note.user.imageUrl ? (
           <Avatar className="w-10 h-10 rounded-full overflow-hidden border border-gray-300 dark:border-gray-700">
@@ -46,6 +75,12 @@ export const NoteCard = ({ note, onClick }: NoteCardProps) => {
             {note.user.name || "Unknown User"}
           </p>
         </div>
+      </div>
+      <UpvoteButton
+          isUpvoted={isUpvoted}
+          upvoteCount={upvoteCount}
+          onUpvote={handleUpvote}
+        />
       </div>
 
       {/* Note Preview */}
@@ -70,9 +105,10 @@ export const NoteCard = ({ note, onClick }: NoteCardProps) => {
         </div>
       )}
 
+
       {/* Open Button */}
       <div className="mt-4">
-        <Button variant={"outline"} className="w-full text-sm">
+        <Button variant={"outline"} className="w-full text-sm" onClick={onClick}>
           Open
         </Button>
       </div>
