@@ -12,6 +12,7 @@ import { ExternalLink, Bookmark, BookmarkCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { UpvoteButton } from "@/components/ui/upvote-button";
 import { toast } from "@/components/ui/use-toast";
+import PDFViewer from '@/components/PDFViewer';
 
 // Comment Type
 export interface CommentType {
@@ -298,7 +299,7 @@ export default function NotePage() {
         className="max-w-4xl mx-auto p-6 space-y-8"
       >
         {/* Header Section */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between overflow-x-auto">
           <div className="flex items-center gap-4">
             <Avatar className="w-12 h-12 rounded-full overflow-hidden border-2 border-zinc-200 dark:border-zinc-800">
               {note.user.imageUrl ? (
@@ -365,12 +366,13 @@ export default function NotePage() {
 
         {/* PDF Preview */}
         <div className="relative w-full h-[75vh] max-h-[90vh] rounded-md overflow-hidden border border-zinc-200 dark:border-zinc-700 shadow-md">
-          <iframe
+          {/* <iframe
             src={note.pdfUrl}
             className="absolute inset-0 w-full h-full"
             allow="autoplay; encrypted-media"
             allowFullScreen
-          ></iframe>
+          ></iframe> */}
+          <PDFViewer fileUrl={note.pdfUrl} />
         </div>
 
         {/* Comments Section */}
