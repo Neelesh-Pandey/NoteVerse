@@ -8,7 +8,8 @@
     "dev:webhook": "ngrok http --url=herring-upright-kingfish.ngrok-free.app 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "vercel-build": "prisma generate && next build"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.12.0",
