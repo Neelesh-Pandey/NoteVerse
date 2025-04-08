@@ -1,12 +1,12 @@
 import { ClerkProvider } from "@clerk/nextjs";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/navbar";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
-import PWAInstallPrompt from "@/components/pwaInstall-prompt"; // ✅ Import it
+import PWAInstallPrompt from "@/components/pwaInstall-prompt";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,10 +18,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// ✅ metadata stays, but without themeColor
 export const metadata: Metadata = {
   title: "NoteVerse Share Notes Effortlessly",
   description: "Share and discover educational notes with Likhit",
-  themeColor: "#000000",
   manifest: "/manifest.json",
   icons: {
     icon: "/icons/icon_512x512.png",
@@ -33,6 +33,11 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "NoteVerse",
   },
+};
+
+// ✅ new viewport export to move themeColor here
+export const viewport: Viewport = {
+  themeColor: "#000000",
 };
 
 export default function RootLayout({
@@ -58,7 +63,7 @@ export default function RootLayout({
           >
             <Navbar />
             <main className="pt-16">{children}</main>
-            <PWAInstallPrompt /> 
+            <PWAInstallPrompt />
             <Toaster />
           </ThemeProvider>
         </body>
