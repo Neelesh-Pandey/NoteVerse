@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {  useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import axios from "axios";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Comment from "@/components/Comment";
@@ -12,7 +12,6 @@ import { ExternalLink, Bookmark, BookmarkCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { UpvoteButton } from "@/components/ui/upvote-button";
 import { toast } from "@/components/ui/use-toast";
-
 
 // Comment Type
 export interface CommentType {
@@ -79,7 +78,7 @@ export default function NotePage() {
             `/api/user-by-clerk/${clerkUserId}`
           );
           if (user) setCurrentUser(user);
-          if(!user) {
+          if (!user) {
             toast({
               title: "Error",
               description: "User not found.",
@@ -195,8 +194,7 @@ export default function NotePage() {
     try {
       await axios.post(`/api/upvote`, {
         noteId: note?.id,
-      }
-      );
+      });
       setNote((prev) =>
         prev
           ? {
@@ -228,17 +226,15 @@ export default function NotePage() {
       });
       return;
     }
-    try{
-      if(isBookmarked) {
+    try {
+      if (isBookmarked) {
         await axios.delete(`/api/bookmark`, {
           data: {
             noteId: note?.id,
           },
-
-      });
+        });
         setIsBookmarked(false);
-      }
-      else {
+      } else {
         await axios.post(`/api/bookmark`, {
           noteId: note?.id,
         });
@@ -294,7 +290,6 @@ export default function NotePage() {
 
   return (
     <>
-     
       <CustomCursor />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -369,11 +364,13 @@ export default function NotePage() {
         </div>
 
         {/* PDF Preview */}
-        <div className="rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-lg">
+        <div className="relative w-full h-[75vh] max-h-[90vh] rounded-md overflow-hidden border border-zinc-200 dark:border-zinc-700 shadow-md">
           <iframe
             src={note.pdfUrl}
-            className="w-full h-[600px] bg-white dark:bg-zinc-900"
-          />
+            className="absolute inset-0 w-full h-full"
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+          ></iframe>
         </div>
 
         {/* Comments Section */}
