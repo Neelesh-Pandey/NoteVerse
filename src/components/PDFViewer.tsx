@@ -2,9 +2,15 @@
 
 import { useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
+import { useInView } from 'react-intersection-observer';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
-import { Fullscreen, Download, ZoomIn, ZoomOut } from 'lucide-react';
+import {
+  Fullscreen,
+  Download,
+  ZoomIn,
+  ZoomOut
+} from 'lucide-react';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -51,41 +57,25 @@ export default function PDFViewer({ fileUrl }: Props) {
     >
       {/* Controls */}
       <div className="flex flex-wrap justify-center gap-4 mb-6">
-        <button
-          onClick={zoomOut}
-          className="p-2 rounded-lg bg-gray-300 dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-700 transition"
-          title="Zoom Out"
-        >
-          <ZoomOut className="w-5 h-5 text-gray-900 dark:text-gray-100" />
+        <button onClick={zoomOut} className="p-2 rounded-lg bg-gray-300 dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-700 transition" title="Zoom Out">
+          <ZoomOut className="w-5 h-5" />
         </button>
         <span className="self-center font-medium text-sm sm:text-base text-gray-700 dark:text-gray-300">
           Zoom: {(scale * 100).toFixed(0)}%
         </span>
-        <button
-          onClick={zoomIn}
-          className="p-2 rounded-lg bg-gray-300 dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-700 transition"
-          title="Zoom In"
-        >
-          <ZoomIn className="w-5 h-5 text-gray-900 dark:text-gray-100" />
+        <button onClick={zoomIn} className="p-2 rounded-lg bg-gray-300 dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-700 transition" title="Zoom In">
+          <ZoomIn className="w-5 h-5" />
         </button>
-        <button
-          onClick={toggleFullscreen}
-          className="p-2 rounded-lg bg-gray-300 dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-700 transition"
-          title="Fullscreen"
-        >
-          <Fullscreen className="w-5 h-5 text-gray-900 dark:text-gray-100" />
+        <button onClick={toggleFullscreen} className="p-2 rounded-lg bg-gray-300 dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-700 transition" title="Fullscreen">
+          <Fullscreen className="w-5 h-5" />
         </button>
-        <button
-          onClick={downloadPDF}
-          className="p-2 rounded-lg bg-gray-300 dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-700 transition"
-          title="Download"
-        >
-          <Download className="w-5 h-5 text-gray-900 dark:text-gray-100" />
+        <button onClick={downloadPDF} className="p-2 rounded-lg bg-gray-300 dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-700 transition" title="Download">
+          <Download className="w-5 h-5" />
         </button>
       </div>
 
-      {/* PDF Scroll Area */}
-      <div className="w-full max-h-[80vh] overflow-y-auto flex justify-center bg-gray-100 dark:bg-gray-900 rounded-lg p-2">
+      {/* PDF Document with Lazy Loaded Pages */}
+      <div className="w-full max-h-[80vh] overflow-y-auto bg-gray-100 dark:bg-gray-900 rounded-lg p-2">
         <Document
           file={fileUrl}
           onLoadSuccess={onDocumentLoadSuccess}
@@ -93,22 +83,43 @@ export default function PDFViewer({ fileUrl }: Props) {
           error="Failed to load PDF."
         >
           {Array.from(new Array(numPages || 0), (_, index) => (
-            <Page
-              key={`page_${index + 1}`}
-              pageNumber={index + 1}
-              scale={scale}
-              renderAnnotationLayer
-              renderTextLayer
-              className="my-2 shadow-md"
-            />
+            <LazyPage key={`page_${index + 1}`} pageNumber={index + 1} scale={scale} />
           ))}
         </Document>
       </div>
 
-      {/* Page Info */}
-      <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-        Total Pages: {numPages}
-      </p>
+      {numPages && (
+        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+          Total Pages: {numPages}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function LazyPage({
+  pageNumber,
+  scale,
+}: {
+  pageNumber: number;
+  scale: number;
+}) {
+  const { ref, inView } = useInView({
+    triggerOnce: false,
+    rootMargin: '500px', // loads page when it's ~500px away from viewport
+  });
+
+  return (
+    <div ref={ref} className="my-4 flex justify-center">
+      {inView && (
+        <Page
+          pageNumber={pageNumber}
+          scale={scale}
+          renderAnnotationLayer
+          renderTextLayer
+          className="shadow-md"
+        />
+      )}
     </div>
   );
 }
