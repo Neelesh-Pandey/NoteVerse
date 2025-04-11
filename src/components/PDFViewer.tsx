@@ -14,7 +14,7 @@ import {
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
+  import.meta.url
 ).toString();
 
 interface Props {
@@ -74,7 +74,7 @@ export default function PDFViewer({ fileUrl }: Props) {
         </button>
       </div>
 
-      {/* PDF Document with Lazy Loaded Pages */}
+      {/* PDF Viewer */}
       <div className="w-full max-h-[80vh] overflow-y-auto bg-gray-100 dark:bg-gray-900 rounded-lg p-2">
         <Document
           file={fileUrl}
@@ -83,7 +83,11 @@ export default function PDFViewer({ fileUrl }: Props) {
           error="Failed to load PDF."
         >
           {Array.from(new Array(numPages || 0), (_, index) => (
-            <LazyPage key={`page_${index + 1}`} pageNumber={index + 1} scale={scale} />
+            <OptimizedLazyPage
+              key={`page_${index + 1}`}
+              pageNumber={index + 1}
+              scale={scale}
+            />
           ))}
         </Document>
       </div>
@@ -97,7 +101,7 @@ export default function PDFViewer({ fileUrl }: Props) {
   );
 }
 
-function LazyPage({
+function OptimizedLazyPage({
   pageNumber,
   scale,
 }: {
@@ -106,19 +110,24 @@ function LazyPage({
 }) {
   const { ref, inView } = useInView({
     triggerOnce: false,
-    rootMargin: '500px', // loads page when it's ~500px away from viewport
+    rootMargin: '1000px', // preloads 1000px before visible
   });
 
   return (
-    <div ref={ref} className="my-4 flex justify-center">
-      {inView && (
+    <div
+      ref={ref}
+      className="my-6 flex justify-center min-h-[300px] sm:min-h-[400px]"
+    >
+      {inView ? (
         <Page
           pageNumber={pageNumber}
           scale={scale}
-          renderAnnotationLayer
-          renderTextLayer
+          renderAnnotationLayer={false}
+          renderTextLayer={false}
           className="shadow-md"
         />
+      ) : (
+        <div className="w-full max-w-[90%] h-[300px] sm:h-[400px] bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
       )}
     </div>
   );
